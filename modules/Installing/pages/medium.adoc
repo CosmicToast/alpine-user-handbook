@@ -1,0 +1,202 @@
+= Choosing the Right Installation Medium
+:experimental: // TODO: make sure experimental is enabled on Antora
+
+== Available Options
+
+=== Architecture
+Computer hardware, and CPUs in particular, come in several different architectures.
+A very common consumer architecture is known as x86_64 - the traditional Intel x86 architecture with AMD's 64-bit extensions.
+If you are installing Alpine to a traditional computer, this is most likely what you have.
+However, Alpine supports several other architectures for to-disk installation purposes:
+
+// MAINT: supported/relevant arhitectures
+x86_64:: the most common desktop, laptop and server architecture
+x86:: the older variant of x86_64, increasingly more rare, and limited to 4gb of ram
+ppc64le:: OpenPower-based systems, such as IBM's POWER8
+s390x:: IBM Z-Systems and Mainframes
+
+Under some circumstances, you may also use armhf and aarch64 architectures - relevant to ARM chips, 32bit and 64bit respectively.
+
+=== Image Type
+// MAINT: downloads page
+Alpine offers a variety of downloadable https://alpinelinux.org/downloads/[images].
+
+The image varieties relevant to this handbook are as follows:
+
+// MAINT: image varieties
+standard::
+A minimal installation image.
+Requires networking.
+extended::
+Standard, but with additional packages included.
+Fewer available architectures, but may be more convenient.
+Often used for non-disk installations.
+netboot::
+A netboot image, intended to be used with PXE.
+Using PXE is outside the scope of this handbook, but it may be used in place of the standard image.
+virtual::
+The standard image, but using a different kernel, optimized for virtual environments.
+xen::
+Specialized image, intended to be used in xen dom0 installations.
+
+If you aren't sure what image to use, you should use extended, assuming your architecture is supported and your booting mechanism is large enough.
+Otherwise, you should use the standard image.
+
+== Downloading
+
+=== Obtaining the Chosen Media
+// MAINT: downloads page
+Image downloads are available at https://alpinelinux.org/downloads/[alpinelinux.org].
+Press the button under your chosen image type, that corresponds to your target architecture.
+This will link to a direct download of your image.
+
+[WARNING]
+====
+If your download has a suffix that is not `.iso`, this means that you have selected an image type or architecture that does not support booting directly.
+If that is the case, stop reading here, and either seek help as is outlined at the start of this handbook, or refer to the wiki on what to do with the file you acquired.
+====
+
+=== [Recommended] Verifying the Downloaded Files (sha256)
+To ascertain that the files you downloaded are intact, you can calculate what is known as a "hash sum" of the file, and compare it to the publicly known one.
+Next to the download button you clicked, there is a separate one with "sha256" written on it - this is a direct download to a (very small) file that contains said public hash.
+
+==== [Linux] Sha256 Calculation
+On a Linux host, you can calculate the sha256 hashsum of a given file using the `sha256` utility.
+Here is an example command you can enter in your shell to calculate the sha256 sum of a file named "alpine.iso" in your current directory.
+
+[source,sh]
+----
+sha256sum alpine.iso
+----
+
+==== [MacOS] Sha256 Calculation
+On a MacOS host, you can calculate the sha256 hashsum of a given file using the `shasum` utility.
+Here is an example command you can enter in your shell to calculate the sha256 sum of a file named "alpine.iso" in your current directory.
+
+[source,bash]
+----
+shasum -a 256 alpine.iso
+----
+
+==== [Windows] Sha256 Calculation
+On a Windows host, you can calculate the sha256 hashsum of a given file using the `Get-FileHash` PowerShell utility.
+Here is an example command you can enter in PowerShell to calculate the sha256 sum of a file named "alpine.iso" in your current directory.
+
+[source,ps1]
+----
+Get-FileHash .\alpine.iso -Algorithm SHA256
+----
+
+=== [Optional] Verifying the Downloaded Files (PGP)
+To ascertain that the files you downloaded are intact, and signed by the developers, you can use the signature file, and verify its validity against the public key of the signer, as well as the contents of the image.
+Next to the button you clicked, there is a separate one with "GPG" written on it - this is a direct download to a (very small) file that contains said signature.
+
+Currently, signatures are made by ncopa, whose key is available over at https://alpinelinux.org/keys/ncopa.asc[alpinelinux.org].
+You should download and import this key, or import it into your PGP keychain some other way.
+
+Assuming you have GnuPG (a PGP implementation) installed, you can verify the signature "alpine.iso.asc" of a file named "alpine.iso" signed by "ncopa.asc" in a shell as so:
+
+[source,sh]
+----
+gpg --import ncopa.asc
+gpg --verify alpine.iso.asc alpine.iso
+----
+
+== Using the Image
+
+A `.iso` file on its own is not very useful.
+You can either flash it to a usb stick, or burn it to a physical cd/dvd.
+
+=== USB Drive
+
+On Windows and MacOS hosts, it is most convenient to use a dedicated utility, such as https://www.balena.io/etcher/[Etcher].
+See that project's documentation in case any further details are required.
+
+On Linux hosts, various utilities such as that have many dependencies that may not be fulfilled.
+As such, it is also possible to use the `dd` utility.
+You must figure out the physical "device node" of your USB drive.
+This will usually be in the form of `/dev/sdX`, where X is a lowercase letter, such as a, b or c.
+
+[CAUTION]
+====
+The next step will *permanently erase* all data on the selected device.
+Please be *very* sure you have identified the correct device before proceeding.
+====
+
+Once you have identified your device, you can flash a file named "alpine.iso" to your device (`/dev/sdb` in this example) using the following command:
+
+[source,sh]
+----
+dd if=alpine.iso of=/dev/sdb <1>
+----
+<1> This needs to be run as root, unless your user has write access to the output block device.
+
+[NOTE]
+====
+You may achieve greater performance in this operation by passing additional parameters at the end, such as `bs=1M`.
+You can find more details on those in the dd manual page (`dd(1)`).
+====
+
+=== Burning to a CD/DVD
+
+Another way to utilize the `.iso` file is by burning it on a CD or DVD.
+This is also useful on older systems, that do not know how to boot from a USB drive.
+
+On MacOS, you can select the `.iso` file, and then press menu:File[Burn Disk Image [...]].
+
+On Windows 8 and above, you can right-click the `.iso` file, and then press btn:[Burn Disk Image].
+
+==== [Linux] Burning an Image File
+
+On Linux hosts, there are no default built-in tools to burn images.
+
+This handbook recommends using k3b - a graphical utility inside of which one can select menu:Tools[Burn CD Image].
+
+Alternatively, people that do not wish to use a graphical environment for this, might want to use the `cdrtools` program.
+Here is an example command that will burn an image named `alpine.iso` to the first found disk drive (`/dev/sr0`):
+
+[source,sh]
+----
+cdrecord dev=/dev/sr0 alpine.iso <1>
+----
+<1> This needs to be run as root, unless your user has write access to the output block device.
+
+== Booting
+
+Once you have prepared your appropriate installation medium, you need to boot into the Alpine Linux live environment.
+During the bootup of your system, you should have the option to enter BIOS/UEFI settings, alongside what is often called "One Time Boot Override", or "Boot Selection".
+
+If you can identify the button to press to get that latter one, you should mash it, and select the entry that corresponds to your installation medium.
+Alternatively, you can try mashing the button for BIOS/UEFI settings, and changing the boot order (often allowed) to prioritize your medium.
+If it is unclear which button it is, you can try any of these, which are commonly used for all of those purposes:
+kbd:[DEL] kbd:[F1] kbd:[F10] kbd:[ESC]
+
+IMPORTANT: If you want to install Alpine in UEFI (non-legacy, nor BIOS) mode, you should make sure that you boot the USB disk using UEFI means.
+
+// TODO: maybe xref where specifically we talk about getting help?
+[WARNING]
+====
+At the time of writing, the boot process has several bugs in it.
+If selecting the correct device drops you into a shell with `grub>` or `grub rescue>` written in it, please seek help as is detailed in this handbook.
+====
+
+=== [Optional] Modifying Kernel Command Line
+There are some scenarios where you might need to modify the kernel command line.
+Alternatively, you may have went to get help, and been asked to do so.
+// FIXME: Add link to developer handbook
+You can see what parameters are available and what they do over at the Developer Handbook.
+
+==== [Grub] Modifying Kernel Command Line
+Under grub, when you are presented with the boot prompt, you may press btn:[e] to edit the booting configuration.
+You can then find the line starting with `linux`, and add or remove parameters from that line.
+
+==== [Isolinux] Modifying Kernel Command Line
+Under isolinux, there is no graphical editor, but you can specify the kernel command line directly.
+// MAINT: primary image name
+To do so, you must select the correct label (for example, `vanilla` or `virt`), and add your parameters there.
+For example, if you wanted to add `rootflags=noatime` to your kernel command line, your isolinux prompt should look as so:
+
+[source]
+----
+boot: vanilla rootflags=noatime
+----

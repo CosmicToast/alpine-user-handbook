@@ -1,0 +1,63 @@
+= Alpine User Handbook
+
+== What is It?
+This is the Alpine User Handbook, an effort to centralize relevant Alpine Linux information.
+This handbook contains installations instructions for a typical user, as well as information for working with relevant system components.
+
+This handbook will focus on the traditional "to disk" style of installation, and target primarily desktop and server systems.
+If your use-case is different, you should be sufficiently familiar with Linux, and can consult the Developer Handbook and manual pages for further details.
+
+== Where to Get Help?
+// MAINT: mailing lists and irc channels
+If you run into problems, you can ask for help in the irc://chat.freenode.net/#alpine-linux[#alpine-linux] irc channel, available on the freenode network.
+
+You can also send an email to the mailto:alpine-user@lists.alpinelinux.org[Alpine-User] mailing list.
+
+== How to Contribute?
+// MAINT: irc channels
+If you believe you can help with the documentation project, or have a specific improvement in mind, you can join the irc://chat.freenode.net/#alpine-docs[#alpine-docs] irc channel, to offer help or submit your patch.
+
+// TODO: add link to developer handbook once it's done
+If you want to help with Alpine itself, please head over to the Developer Handbook instead.
+
+== Conventions
+This is, ultimately, a technical document.
+As such, it is impossible to escape having *some* technical jargon and conventions.
+Here are a few things to watch out for, in case you are new to computing or Linux.
+
+=== Definitions
+
+BIOS::
+Basic Input-Output System - a very simple program that runs immediately after POST.
+Used on older computers to perform configuration and initially execute the bootloader.
+Bootloader::
+A small program whose job it is to execute the kernel, load the initial runtime filesystem, and pass any arguments necessary to them to ensure booting happens.
+Kernel::
+The core program of the operating system - present in all operating systems.
+POST::
+Power-On Self Test - a process all modern computers go through at the very start of its booting process, immediately after pressing the power button.
+Root::
+The root user is the owner of the system - think of it like a super administrator - it has all the rights that are possible to have.
+It is not intended for day-to-day use.
+Shell::
+A program that can interpret what you type into it as an instruction to execute commands or programs on your disk in a specific way.
+Terminal emulator::
+A display or window, usually with a black background and white font, that can host a shell.
+UEFI::
+Unified Extendible Firmware Interface - a more complex and more flexibile replacement for the BIOS, that can, however, make manual and automatic setup more complex and difficult, under some circumstances.
+
+=== Shell
+When you see a block like the one that follows, that is usually a "command" you can run.
+
+[source,sh]
+----
+run --this command
+----
+
+This means you should insert that text, or something similar to it (read the explanation surrounding these!) into your terminal emulator.
+Usually, you can do these commands as a normal user.
+However, sometimes, root privileges are required.
+In these cases, the handbook should mention that you must run the command as root.
+No document is perfect, however, so if you see output along the lines of "permission denied", you can try running it again as root, to see if the situation improves.
+
+// TODO: once this is public, and the mailing list is setup, modify to mention that
