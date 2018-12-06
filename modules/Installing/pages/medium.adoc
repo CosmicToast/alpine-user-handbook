@@ -15,6 +15,7 @@ x86:: the older variant of x86_64, increasingly more rare, and limited to 4gb of
 ppc64le:: OpenPower-based systems, such as IBM's POWER8
 s390x:: IBM Z-Systems and Mainframes
 
+// TODO: mention that aarch64 is supposed to support EFI
 Under some circumstances, you may also use armhf and aarch64 architectures - relevant to ARM chips, 32bit and 64bit respectively.
 
 === Image Type
