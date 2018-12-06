@@ -32,6 +32,9 @@ Basic Input-Output System - a very simple program that runs immediately after PO
 Used on older computers to perform configuration and initially execute the bootloader.
 Bootloader::
 A small program whose job it is to execute the kernel, load the initial runtime filesystem, and pass any arguments necessary to them to ensure booting happens.
+DHCP::
+Dynamic Host Configuration Protocol - a very common automatic ip reservation system.
+If you have a consumer router, you are most likely using this.
 Kernel::
 The core program of the operating system - present in all operating systems.
 POST::
