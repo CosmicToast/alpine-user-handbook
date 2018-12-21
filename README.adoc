@@ -1,0 +1,17 @@
+= User Handbook
+Chloe Kudryavtsev <toast@toastin.space>
+
+This is the Antora component for the Alpine User Handbook.
+It primarily focuses on to-disk style installations.
+
+== Deploying
+// TODO: link to playbook repository
+
+You cannot deploy this "on its own" - you will need to either use the Alpine Documentation repository (which contains the antora playbook) to deploy this, or write your own.
+If you want to mirror these docs, please see the instructions in that README.
+
+== Contributing
+
+If you want to send a patch, and your name is not yet in the authors list, please add it there.
+Do also note that by contributing the patch, assuming that you have not done so yet, you are agreeing to license your patch (and all future ones) under the license of the repository.
+You will be explicitly asked to confirm that in whatever medium you submit that patch (or you may confirm this in your patch commit message).
