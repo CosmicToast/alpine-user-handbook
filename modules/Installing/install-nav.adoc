@@ -23,4 +23,4 @@
 **** xref:manual.adoc#_bios_ms_dos[BIOS + MS-DOS]
 **** xref:manual.adoc#_bios_gpt[BIOS + GPT]
 **** xref:manual.adoc#_uefi_gpt[UEFI + GPT]
-*** xref:manual.adoc#_copying_system_files_and_bootloader_setup[Finalizing]
+*** xref:manual.adoc#_finalizing[Finalizing]
