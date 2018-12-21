@@ -1,0 +1,499 @@
+= Semi-Automatic Installation
+
+If you're here, it's because you want to install alpine semi-manually, or because you ran into issues (whether in scope or otherwise) with `setup-alpine`.
+Either way, this section of the handbook describes, step by step, how to get a system up and running.
+We will be describing the usage of the various `setup-*` utilities, as well as explaining what they do.
+
+NOTE: It is assumed that everything in this section will be done as root, since that's the only user available on the boot medium by default.
+
+== Keyboard Layout
+// MAINT: kbd-bkeymaps, loadkmap, setup-keymap
+
+Keyboard layout is controlled by the `loadkmap` service file.
+In `/etc/conf.d/loadkmap` a variable (`KEYMAP`) is defined.
+The file this variable points to is the keymap that will be loaded.
+
+The various keymaps are available in the package `kbd-bkeymaps`, and are located in `/usr/share/bkeymaps`.
+Inside that directory, are multiple directories with the global categories for keymaps (e.g `us` and `ca` for United States and Canada respectively).
+Within those directories are the local variants of each keymap category.
+For example, to have the common keyboard type, you would use `/usr/share/bkeymaps/us/us.bmap.gz`.
+
+One easy way to select the keymap is by using `setup-keymap`.
+Simply running it will make it go over various available keymaps, prompt you for which one you want to use, and then configure `loadkmap` for you.
+It will also remove the `kbd-bkeymaps` package after choosing the keymap and copying it into a different directory.
+Alternatively, if you already know what keymap you want (for example, the `us/us.bmap.gz` from before), you can pass that information to `setup-keymap`.
+
+[source,sh]
+----
+setup-keymap us us <1>
+----
+<1> this will copy and use `/usr/share/bkeymaps/us/us.bmap.gz`
+
+== Hostname
+// MAINT: setup-hostname
+
+Your hostname is the name of your computer.
+It is important that hostnames on your local area network be unique.
+If you need recommendations as to what to make your hostname, you can refer to https://tools.ietf.org/html/rfc1178[RFC 1178].
+
+The primary hostname setting is whatever the contents of `/etc/hostname` are.
+However, there are some common restrictions as to what it should or shouldn't be (also listed in the RFC mentioned above).
+As such, you can use `setup-hostname` to make the process safer.
+You can either invoke it with no arguments to be prompted, or you can run it with an argument to set your hostname.
+
+For example, if you want your hostname to be "alpine", you might run it like so:
+
+[source,sh]
+----
+setup-hostname alpine <1>
+----
+<1> sets the machine's hostname to "alpine"
+
+Note, however, that this will not populate `/etc/hosts` - your local hardcoded DNS cache.
+If you want to accelerate some loopback operations, you can modify that file too.
+For example, if you were to set your hostname to "alpine", with no particular domain for your network (if you have one of those, you likely do not need these instructions), your `/etc/hosts` file could look like so:
+
+[source]
+----
+127.0.0.1 localhost.localdomain localhost alpine.localdomain alpine
+::1       localhost.localdomain localhost alpine.localdomain alpine
+----
+
+Now that you are done, you should apply the hostname using either `rc-service hostname restart` or `/etc/init.d/hostname restart`.
+
+== Networking
+// TODO: rewrite this whole section, once wpa_cli etc is fixed
+
+Before you configure the rest of the system, you should set up networking.
+This will allow you, for instance, to fetch bootloaders, configure sshd (to continue this setup from the comfort of a different, graphically-enabled machine), and other such desirable features.
+
+=== Configure Wireless Networking
+// MAINT: setup-interfaces
+
+If your system does not have an ethernet port (or connection) available, you will need to set up wireless connectivity.
+It is strongly recommended that you try to avoid this.
+
+However, in the scenario that you have no choice, before you can configure the network, you must establish a connection to it.
+
+To do so, it is recommended that you use the `setup-interfaces` utility.
+In it, you should select your wireless interface when prompted (it will usually be called something like `wlan0`) and answer the questions (for more details on that, see the next section).
+
+// MAINT: setup-interfaces running wpa_supplicant by hand
+[CAUTION]
+====
+This will *not* persist across a reboot.
+However, if you wish to continue using a similar method, you may use `rc-update add wpa_supplicant boot`.
+It is still recommended to get a more complete solution, such as wpa_cli.
+You can find guides around various wireless networking management solutions (including wpa_cli and NetworkManager) over on the wiki.
+====
+// TODO: link to the wiki
+
+=== DHCP
+
+In most cases, you will want to use DHCP.
+If you are on a professional network, or have a common home router, you very likely have it available.
+It is also very common on networks in general.
+DHCP will allocate an IP address to your system, give it a nameserver for DNS queries, and will generally greatly decrease the amount of work required.
+For a typical DHCP setup, you can set it up quickly by running `setup-interfaces -a` (the "a" stands for "auto").
+
+CAUTION: Do *not* do this if you are using a wireless network.
+
+In case this doesn't work (or you're on a wireless network), you may need to run it without the "a" flag.
+In such a scenario, the script will ask you questions about your network topology, that you can answer.
+
+=== Static IP
+
+In some cases, your network will not have DHCP available.
+In that scenario, you will need to edit `/etc/network/interfaces` and `/etc/resolv.conf` on your own.
+If you ran `setup-interfaces`, it will have asked you if you want to do any manual editing of the network configuration.
+You may answer yes there, or simply edit both files manually.
+
+The default (DHCP-style) `/etc/network/interfaces` file will look something like this:
+
+[source]
+----
+include::example$dhcp.interfaces[]
+----
+
+To specify your own network details, you will need to find the following details:
+
+- The address your system should have (it must not be taken yet)
+- The gateway address
+- The network subnet mask (in most networks, this is `255.255.255.0`)
+
+You should be able to ask your network administrator for most of these.
+In this example, we have determines that your system should have the IP `192.168.0.147`, the gateway is at `192.168.0.1` and the subnet mask is `255.255.255.0`.
+In that scenario, the `/etc/network/interfaces` file should look like so:
+
+[source]
+----
+include::example$static.interfaces[]
+----
+
+=== DNS
+
+If you did not end up using DHCP, you will also need to set up DNS.
+This is done by editing the `/etc/resolv.conf` file.
+In most cases, you can use `1.1.1.1`, `8.8.8.8` or `9.9.9.9` as your DNS server.
+Often, your router will also provide one for use.
+In case of confusion, you can also ask your network administrator.
+
+Here is an example `/etc/resolv.conf` file, that uses both the `1.1.1.1` and `8.8.8.8` nameservers.
+
+[source]
+----
+include::example$resolv.conf[]
+----
+
+Alternatively, you can use the `setup-dns` script.
+
+[NOTE]
+====
+Currently, `setup-dns` asks for a `domain name`.
+Feel free to leave the answer blank, as it is optional.
+====
+
+=== Applying Configuration
+
+Once all of the above is accounted for, you can now start the networking configuration.
+This is done by running `rc-service networking start`.
+If desired, you can also set it to load during boot, using `rc-update add networking boot`.
+
+== Timezone
+// MAINT: musl/tzdata
+
+Unless you live in the GMT timezone, you may be interested in having your device know where you (or it) is located, time-wise.
+On musl, the timezone is defined by the `TZ` environment variable, which should either mention a POSIX-style timezone, directly point at a file, or have a standard `Area/SubArea` definition, which must be found under `/usr/share/zoneinfo`, `/share/zoneinfo` or `/etc/zoneinfo`.
+
+You can get `/usr/share/zoneinfo` by installing the `tzdata` package.
+You can see the available Areas by looking that directory, and the available SubAreas by looking into your chosen Area's directory.
+Once chosen, you may either keep the package installed, or you may copy your chosen file into `/etc/zoneinfo`.
+
+NOTE: It is recommended that you keep the package installed.
+
+For example, if your chosen area is `America/New_York`, you would run this:
+
+[source, sh]
+----
+install -Dm 0644 /usr/share/zoneinfo/America/New_York /etc/zoneinfo/America/New_York
+----
+
+// TODO: alpine seems to have relics from uclibc, things like /etc/TZ, and the lack of $TZ
+// MAINT: environment variable handling
+Finally, you will need to add the TZ environment variable to your system.
+You can do this by running the following, with the same timezone example:
+
+[source, sh]
+----
+export TZ='America/New_York' <1>
+echo "export TZ='$TZ'" >> /etc/profile.d/timezone.sh
+----
+<1> This step is primarily here to propagate the new setting to your current session.
+
+Alternatively, you may use `setup-timezone`, which will copy the file over for you.
+
+// MAINT: setup-timezone, baselayout
+[WARNING]
+====
+`setup-timezone`, as it is now, will *not* set up the `TZ` environment variable.
+It will instead pretend the timezone data is a localtime-style file.
+This is a technical difference, that you likely do not need to worry about, but due to this difference it is recommended that you perform this step entirely by hand.
+====
+
+== Repositories
+
+If you want to be able to install packages, you're going to want to have some repositories.
+// MAINT: alpine images
+By default, your boot medium will come with a built-in repository that is on the boot medium itself.
+However, now that you have networking, you may wish to install packages outside the relatively small pool available on the boot medium.
+Repositories for the package manager (`apk`) are configured in a file named `/etc/apk/repositories`, and valid signing keys are located under `/etc/apk/keys/`.
+Your boot medium should come with valid pre-configured keys, but no external repositories.
+// MAINT: mirrors
+Currently, you can see the list of available mirrors and their status over at https://mirrors.alpinelinux.org/[mirrors.alpinelinux.org].
+
+NOTE: Do not worry about the lack of "https" in the mirrors - all packages are signed, so as long as you do not add any untrustworthy keys, your package manager will refuse to install any illegitimate packages.
+
+// MAINT: release, "default" repositories
+Here is an example `/etc/apk/repositories` file, that uses all stable repositories from the primary mirror of the latest release version:
+
+[source]
+----
+include::example$repositories.apk[]
+----
+
+// MAINT: setup-apkrepos
+Assuming your network configuration is done, you may also use the `setup-apkrepos` utility, which will fetch a list of valid repositories, and give you a choice between them (and options such as "random").
+
+== Root Password
+
+At this point, you should set up a root password.
+This is easy to do - simply run `passwd` and follow the prompts.
+
+NOTE: You will not see your own typing - this is normal, it is obscured to stop people from being able to peek at your screen, even if just to see the number of characters in your passwords.
+
+== SSH
+// MAINT: setup-sshd
+
+// MAINT: Alpine CD getting a default graphical interface / moving from getty
+SSH is very convenient to have - it means you can be in the comfort of your terminal emulator, rather than a raw getty (the full-screen emulator that shows up when booting up an alpine install medium).
+Now that we have networking, we can set up an ssh daemon.
+
+// MAINT: available sshd
+There are currently two primary secure shell daemons available - openssh and dropbear.
+The latter is more simple, but has its own (incompatible) key format, and can only be configured through command line arguments - as such, it is not recommended for beginners.
+You can install either one using `apk add name`, where name is either "dropbear" or "openssh" respectively.
+After that, you may want to start it, and possibly enable it - using `rc-service openssh start` and `rc-update add openssh` respectively.
+
+WARNING: By default, you cannot log in as the root user using a password.
+
+Note that this can also be done for you by the `setup-sshd` utility - it will ask you which one you would like, install, start and enable it for you.
+
+== NTP
+// MAINT: setup-ntp
+
+It may be useful to make sure that your clock is correct.
+This can be achieved by using an NTP daemon.
+Some of the common ones are `chronyd` and `openntpd`.
+You can install them by using `apk add name`, where name is the desired daemon.
+After that, you may want to start it, and possibly enable it - using `rc-service name start` and `rc-update add name` respectively.
+
+// MAINT: chronyd PID file bug
+[WARNING]
+====
+Currently, `chronyd` is bugged.
+The bug in question is mostly cosmetic, but it may be alarming to a new user.
+As such, temporarily, it is recommended that you use the `setup-ntp` script and pick `busybox`.
+====
+
+Note that this can also be done for you by the `setup-ntp` utility - it will ask you which one you would like, install, start and enable it for you.
+
+== Partitioning Your Disk
+// MAINT: parted availability, fdisk, setup-disk
+
+=== `setup-disk`
+
+The `setup-disk` utility can do the rest of this work for you.
+It will make a partition table on your hard drive, partition it as per a specification, format the partitions with filesystems, set up the base system, and install the bootloader.
+This section describes how to use it, as well as the various tweakables.
+
+// MAINT: setup-disk stability
+[CAUTION]
+====
+As it is currently, setup-disk should work for typical single-disk non-UEFI setups.
+If the defaults seem acceptable to you, feel free to use it.
+However, in other cases, it is recommended that you at least consider doing this (admittedly difficult) section of the installation by hand.
+====
+
+[NOTE]
+====
+`setup-disk` also supports non-disk installations.
+These are not covered in this handbook.
+====
+
+==== Options and Settings
+// MAINT: setup-disk
+`setup-disk` is configured through command line arguments, as well as environment variables.
+In most cases, if you want setup-disk to do all the work for you, you should not need to specify anything beyond `-m sys`, as in `setup-disk -m sys`.
+This is an incomplete listing - it lacks anything mentioning non-disk installations, as well as anything overly complex (such as automatic lvm/raid).
+// TODO: add xref to setup-disk manual, developer handbook page on it
+If you need those, head over to the manual or developer pages.
+
+// MAINT: setup-disk defaults and allowed values
+.Environment Variables:
+BOOTFS:: The filesystem to use on `/boot`,  defaults to ext4, also allows ext2, ext3, (flat) btrfs, xfs and vfat (required on UEFI).
+BOOTLOADER:: Bootloader to use. Defaults to syslinux, but also allows using grub, unless UEFI is used, in which case grub is required.
+BOOTSIZE:: The size of `/boot`.
+DISKLABEL:: The type of partition table to use. Defaults to dos, but also allows using gpt, unless UEFI is used, in which case gpt is required.
+ROOTFS:: The filesystem to use on `/`, defaults to ext4, also allows ext2, ext3, (flat) btrfs and xfs.
+USE_EFI:: Enable this to force using UEFI.
+
+CAUTION: Due to current issues with grub it is recommended to avoid grub and UEFI (as the latter requires it to function).
+
+.Command Line Options:
+[horizontal]
+-m:: The disk mode to use - you want `-m sys`.
+-q:: Operate more quietly.
+-s:: Specify the size of the swap partition.
+-v:: Operate more verbosely.
+First positional argument:: The mounted root to install to.
+
+Any missing information will be queried from you by `setup-disk`, so only change the above beyond `-m` if you explicitly want to override the defaults/questions.
+
+In the scenario where the bootloader installation causes problems, see the sections that follow.
+
+=== Parted
+
+Parted is GNU's PARTition EDitor.
+It is a very useful tool that's capable of performing partition editing of various sorts - including the ones we're interested in, both programmatically and interactively.
+Because of this, that is the utility we will be using in this section.
+Begin by installing it, using `apk add parted`.
+
+This is also the part of the handbook in which you must determine whether you need (or want) to use UEFI.
+// MAINT: /sys/firmware/efi
+This decision will be left up to you, but you can determine whether or not you are currently booted using UEFI by checking if the `/sys/firmware/efi` folder exists.
+In case this is difficult, you may use the following snippet to get a direct answer:
+
+[source, sh]
+----
+test -d /sys/firmware/efi && echo UEFI || echo BIOS
+----
+
+Once you have decided, you must also choose the non-booting-related partitions you want to have (as the boot method will determine how the prior go).
+For beginners, making a big root partition is recommended, and that is what will be used in the examples that follow.
+If you know that you want something different, you should also know how to modify the examples.
+
+We thus end up with 3 common options:
+- BIOS installation on an MS-DOS partition table
+- BIOS installation on a GPT partition table
+- UEFI installation on a GPT partition table
+
+Other options exist, but they are for more advanced users.
+Using MS-DOS for the BIOS installation is more trivial, but comes with some limitations (only 4 partitions, maximum disk size of 2 TB), so both options are covered.
+It is also assumed that your disk is sufficiently large, that small losses (e.g making the ESP 1 GB) are not relevant for ease of installation.
+"Sufficiently large", in this case, is anywhere at or above 32 GB in total.
+If your disk is smaller, you are likely on a specialized device, and should either follow the automatic installation method mentioned previously, or perform a tmpfs-based install (which is not covered in this handbook).
+The following sections cover each of those options, so feel free to skip to the one chosen.
+
+Also note that you may notice "swap" partitions mentioned as a flag.
+"swap" is not actually a flag, but a filesystem type.
+It is a pagefile, meant to supplement your system memory.
+It is recommended to make it up to 2x the size of your physical ram, but can be considered optional.
+
+In the following sections, you will see code such as this:
+
+[source, sh]
+----
+alias p="parted -sa optimal /dev/sda" <1>
+p mklabel msdos <2>
+----
+<1> This is a shortcut/alias. The primary thing to worry about is `/dev/sda` - this must be the device you want to use for the installation.
+<2> Parted supports both interactive and non-interactive commands. This is the equivalent to running `parted -a optimal /dev/sda`, then entering `mklabel msdos` into the prompt, or entering `mklabel` into the prompt, and answering `msdos` to the incoming question. The specifics as to how you perform the below are up to you.
+
+==== BIOS + MS-DOS
+
+Under a BIOS setup with an MS-DOS partition table, we can only have 4 primary partitions, and are limited to 2TB disks.
+Extended partitions are outside of the scope of this handbook.
+Under BIOS+MS-DOS, we can use the MBR for installing the bootloader, so we only need to worry about the actual data partitions.
+Here is an example partitioning scheme:
+
+:===
+Partition Number:Start:End:Mount:Flags
+
+1p:0G:1G:/boot:boot
+2p:1G:5G:none:swap
+3p:5G:-0G:/:
+:===
+
+You can produce this partitioning scheme on a drive named `/dev/sda` using the following snippet:
+
+[source, sh]
+----
+alias p="parted -sa optimal /dev/sda"
+p mklabel msdos
+p mkpart p 0G 1G
+p mkpart p 1G 5G
+p mkpart p 5G 100%
+p set 1 boot
+mkfs.ext4 /dev/sda1 <1>
+mkswap /dev/sda2
+mkfs.ext4 /dev/sda3 <2>
+----
+<1> This last section creates the filesystems. In this example, we use ext4 for `/boot` and `/` - you can use any of the supported filesystems.
+<2> Notice how the `3` in `/dev/sda3` comes from the fact that this is the 2nd partition we created (it also has the 3 in the number in the above planning table).
+
+==== BIOS + GPT
+
+Under a BIOS setup with a GPT partition table, we do not have an MBR, so we will need to create one.
+Here is an example of a partitioning scheme:
+
+:===
+Partition Number:Start:End:Mount:Flags
+
+1:1M:2M:none:bios_grub
+2:2M:1G:/boot:boot
+3:1G:5G:none:swap
+4:5G:-0G:/:
+:===
+
+You can produce this partitioning scheme on a drive named `/dev/sda` using the following snippet:
+
+[source, sh]
+----
+alias p="parted -sa optimal /dev/sda"
+p mklabel gpt
+p mkpart p 1MiB 2MiB
+p mkpart p 2MiB 1G
+p mkpart p 1G 5G
+p mkpart p 5G 100%
+p set 1 bios_grub
+p set 2 boot
+mkfs.ext4 /dev/sda2 <1>
+mkswap /dev/sda3 <2>
+mkfs.ext4 /dev/sda4
+----
+<1> This last section creates the filesystems. In this example, we use ext4 for `/boot` and `/` - you can use any of the supported filesystems.
+<2> Notice how the `3` in `/dev/sda3` comes from the fact that this is the 2nd partition we created (it also has the 3 in the number in the above planning table).
+
+==== UEFI + GPT
+
+Under a UEFI setup, you need to use GPT with an ESP partition.
+It must be FAT32 formatted, and can be used as your boot partition.
+Here is an example of a partitioning scheme:
+
+:===
+Partition Number:Start:End:Mount:Flags
+
+1:0G:1G:/boot:esp,boot
+2:1G:5G:none:swap
+3:5G:-0G:/:
+:===
+
+You can produce this partitioning scheme on a drive named `/dev/sda` using the following snippet:
+
+[source, sh]
+----
+alias p="parted -sa optimal /dev/sda"
+p mklabel gpt
+p mkpart p 0G 1G
+p mkpart p 1G 5G
+p mkpart p 5G 100%
+p set 1 esp
+mkfs.vfat -F32 /dev/sda1 <1>
+mkswap /dev/sda2
+mkfs.ext4 /dev/sda3 <2>
+----
+<1> This last section creates the filesystems. In this example, we use ext4 for `/boot` and `/` - you can use any of the supported filesystems.
+<2> Notice how the `3` in `/dev/sda3` comes from the fact that this is the 2nd partition we created (it also has the 3 in the number in the above planning table).
+
+=== Finalizing
+// MAINT: setup-disk
+
+Now that your filesystems are formatted, you have to mount them under a mountpoint (usually `/mnt`).
+"Mounting" a filesystem is like assigning a drive letter to a hard drive, but can be done under any directory.
+Here is an example of how you would mount the <<_uefi_gpt>> set under `/mnt`:
+
+[source, sh]
+----
+mount /dev/sda3 /mnt <1>
+mkdir /mnt/boot <2>
+mount /dev/sda1 /mnt/boot
+swapon /dev/sda2 <3>
+----
+<1> Notice how the target `/` is equivalent to `/prefix/`, with prefix being "mnt" here.
+<2> By default, filesystems are empty - so you must create the mountpoint for `/boot`.
+<3> "Mounting" swap is actually enabling it, thus the command name - "swap on".
+
+Once everything is mounted, we can instruct `setup-disk` to copy the required files into the mountpoint, and set up the bootloader.
+For details on how to configure it using environment variables, you can see <<_options_and_settings>>.
+To actually run it, you simply have to specify the specific mountpoint.
+In our example, this is `setup-disk /mnt`.
+
+// TODO: xref to intro - support channels
+[CAUTION]
+====
+Bootloader setup, and grub in particular, tends to have issues.
+If after rebooting (the next step) you run into issues, feel free to ask for help in any of the support channels mentioned in the introduction.
+====
+
+// TODO: xref to Working section
+You can now reboot and move on to the "Working with Alpine" section.
