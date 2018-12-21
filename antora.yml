@@ -1,0 +1,7 @@
+name: user-handbook
+title: User Handbook
+version: '0.1a'
+nav:
+  - modules/ROOT/nav.adoc
+  - modules/Installing/boot-nav.adoc
+  - modules/Installing/install-nav.adoc
