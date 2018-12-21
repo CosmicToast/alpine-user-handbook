@@ -37,6 +37,9 @@ Dynamic Host Configuration Protocol - a very common automatic ip reservation sys
 If you have a consumer router, you are most likely using this.
 Kernel::
 The core program of the operating system - present in all operating systems.
+NTP::
+Network Time Protocol - a service that synchronizes your computer's clock with another.
+Usually used to synchronize with a specialized pool that get their information from a highly accurate atomic clock.
 POST::
 Power-On Self Test - a process all modern computers go through at the very start of its booting process, immediately after pressing the power button.
 Root::
@@ -44,6 +47,8 @@ The root user is the owner of the system - think of it like a super administrato
 It is not intended for day-to-day use.
 Shell::
 A program that can interpret what you type into it as an instruction to execute commands or programs on your disk in a specific way.
+SSH::
+Secure SHell - a convenient way to use a shell on another system in a secure way. Commonly used in Linux.
 Terminal emulator::
 A display or window, usually with a black background and white font, that can host a shell.
 UEFI::
