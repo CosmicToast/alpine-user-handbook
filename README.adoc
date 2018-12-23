@@ -3,6 +3,7 @@ Chloe Kudryavtsev <toast@toastin.space>
 
 This is the Antora component for the Alpine User Handbook.
 It primarily focuses on to-disk style installations.
+NOTE: It has been moved over to [Alpine's Git Servers](https://git.alpinelinux.org/cgit/docs/user-handbook/). This repository is thus unmaintained.
 
 == Deploying
 // TODO: link to playbook repository
